@@ -24,7 +24,8 @@
 #define SEL_PIN 13
 #define COIN_INPIN 9
 #define DOORLOCK_PIN 10
-char TERMINAL = '07038189344';
+//const char TERMINAL = "07038189344";
+//const char* a = "connectivity/";
 //const COIN_TOPIC "coin/" + TERMINAL
 // Create an ESP8266 WiFiClient class to connect to the MQTT server. 
 WiFiClient client; 
@@ -32,9 +33,11 @@ WiFiClient client;
 Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD); 
 // Define a will
 //const char WILL_FEED[] PROGMEM = MQTT_USERNAME "connectivity/07038189344";
-char connectivity = 'connectivity/' + TERMINAL;
-const char *connect_test = &connectivity;
-Adafruit_MQTT_Publish lastwill = Adafruit_MQTT_Publish(&mqtt, connect_test);
+//char connectivity[256];
+//strncpy (connectivity, "connectivity/");
+//strncat (connectivity, "07038189344");
+//char connectivity = 'connectivity/' + TERMINAL;
+Adafruit_MQTT_Publish lastwill = Adafruit_MQTT_Publish(&mqtt, MQTT_USERNAME "connectivity/07038189344");
 
 /****************************** Feeds ***************************************/ 
  
@@ -44,7 +47,6 @@ Adafruit_MQTT_Publish coinInserted = Adafruit_MQTT_Publish(&mqtt, MQTT_USERNAME 
 // Setup a feed called 'esp8266_led' for subscribing to changes. 
 Adafruit_MQTT_Publish mqttConnected = Adafruit_MQTT_Publish(&mqtt, MQTT_USERNAME "connected/07038189344"); 
 Adafruit_MQTT_Subscribe receivedPayment = Adafruit_MQTT_Subscribe(&mqtt, MQTT_USERNAME "07038189344");
-Adafruit_MQTT_Subscribe connectivityCheck = Adafruit_MQTT_Subscribe(&mqtt, MQTT_USERNAME "connectivity2");
 /*************************** Sketch Code ************************************/ 
 volatile byte interruptCounter = 0;
 
@@ -75,10 +77,10 @@ void setup() {
  } 
  Serial.println(); 
  Serial.println("WiFi connected"); 
- Serial.println("IP address: "); Serial.println(WiFi.localIP()); 
+ Serial.println("IP address: "); Serial.println(WiFi.localIP());
  // Setup MQTT subscription for esp8266_led feed. 
  mqtt.subscribe(&receivedPayment);
- mqtt.subscribe(&connectivityCheck);
+// mqtt.subscribe(&connectivityCheck);
  mqtt.will(MQTT_USERNAME "connectivity/07038189344", "OFF");
 } 
 //uint32_t x=0; 
@@ -108,15 +110,6 @@ void loop() {
        }
      } 
     }
-   else if (subscription == &connectivityCheck) { 
-     char *message = (char *)connectivityCheck.lastread;
-     String myMessage = message;
-     Serial.println(message);
-     if (myMessage.equals("check")) {
-        Serial.println("reply yes");
-        mqttConnected.publish("07038189344");
-     }
-   } 
  }
    if(interruptCounter>0){
  
