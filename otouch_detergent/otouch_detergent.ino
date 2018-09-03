@@ -7,6 +7,8 @@ extern "C" {
 #include "user_interface.h"
 }
 
+
+
 /////////////////////////////////
 ////// WIFI SETTING /////////////
 /////////////////////////////////
@@ -61,12 +63,15 @@ WiFiClient client;
 Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD); 
 Adafruit_MQTT_Publish lastwill = Adafruit_MQTT_Publish(&mqtt, MQTT_USERNAME "connectivity/6786f3831d7a750bac397d8967b81044");
 
+/****************************** Feeds ***************************************/ 
+ 
+
 // Notice MQTT paths for AIO follow the form: <username>/feeds/<feedname> 
-Adafruit_MQTT_Publish runStatus = Adafruit_MQTT_Publish(&mqtt, MQTT_USERNAME "Lock/6786f3831d7a750bac397d8967b81044");
+Adafruit_MQTT_Publish doorLock = Adafruit_MQTT_Publish(&mqtt, MQTT_USERNAME "Lock/6786f3831d7a750bac397d8967b81044");
 Adafruit_MQTT_Publish coinIn = Adafruit_MQTT_Publish(&mqtt, MQTT_USERNAME "coinIn/6786f3831d7a750bac397d8967b81044");
 // Setup a feed called 'esp8266_led' for subscribing to changes. 
 Adafruit_MQTT_Subscribe receivedPayment = Adafruit_MQTT_Subscribe(&mqtt, MQTT_USERNAME "6786f3831d7a750bac397d8967b81044");
-
+/*************************** Sketch Code ************************************/ 
 
 ////////////////////////////////////
 //////// TIME AND INTERRUPT ////////
@@ -89,48 +94,55 @@ void timerInit(void) {
 ///////////////////////////////////
 
 void setup() {
- pinMode(LPSO_W_SEL, OUTPUT);
- pinMode(LPSO_W_IN, INPUT);
- pinMode(LPSO_W_STATUS, INPUT);
- pinMode(LPSO_W_CTRL, OUTPUT);
- pinMode(DEX_D_CTRL, OUTPUT);
+
+ pinMode(DTG_CA1_IN, INPUT);
+ pinMode(DTG_CA_CTRL, OUTPUT);
+ pinMode(DTG_CA2_IN, INPUT);
+ pinMode(DTG_MTR_SFT, INPUT);
+ pinMode(DTG_MTR_DTG, INPUT);
+ pinMode(DTG_MTR_BEG, INPUT);
  pinMode(LED_BUILTIN, OUTPUT);
  //blink(3);
- Serial.begin(115200); 
+ //Serial.begin(115200); 
  delay(1000);
  // always need to select low for the coin acceptor.
  //digitalWrite(SEL_PIN, LOW);
  //digitalWrite(COIN_OUTPIN, LOW); 
  digitalWrite(LED_BUILTIN, HIGH);
- // Read the mode of the hardware //
  
- Serial.println();
- Serial.print("Connecting to "); 
- Serial.println(WLAN_SSID); 
+ 
+ //Serial.println();
+ //Serial.print("Connecting to "); 
+ //Serial.println(WLAN_SSID); 
  WiFi.begin(WLAN_SSID, WLAN_PASS); 
  while (WiFi.status() != WL_CONNECTED) { 
    delay(500); 
-   Serial.print("."); 
+   //Serial.print("."); 
  } 
- Serial.println(); 
- Serial.println("WiFi connected"); 
- Serial.println("IP address: "); Serial.println(WiFi.localIP());
+ //Serial.println(); 
+ //Serial.println("WiFi connected"); 
+ //Serial.println("IP address: "); Serial.println(WiFi.localIP());
  // Setup MQTT subscription for esp8266_led feed. 
  mqtt.subscribe(&receivedPayment);
  mqtt.will(MQTT_USERNAME "connectivity/6786f3831d7a750bac397d8967b81044", "OFF");
  timerInit();
 }
+int sftnrCounter = 0;
+int sftnrDrop = 0;
+int turn_sft = 0;
+int dtgCounter = 0;
+int dtgDrop = 0;
+int turn_dtg = 0;
+int begCounter = 0;
+int begDrop = 0;
+int turn_beg = 0;
+int coin_input1 = 0;
+int coin_input2 = 0;
+int coinCounter1 = 0;
+int coinCounter2 = 0;
+int high1 = 0;
+int high2 = 0;
 
-int counter = 0;
-int checkOne=0;
-int SendOne = 0;
-int lockCounter = 0;
-int lockCount = 0;
-int coin_input = 0;
-int coinCounter = 0;
-int unlockCounter = 0;
-int high = 0;
-int lockState = HIGH;
 
 ///////////////////////////////////
 /////// MAIN LOOP /////////////////
@@ -141,79 +153,165 @@ void loop() {
  // connection and automatically reconnect when disconnected).  See the MQTT_connect 
  
  MQTT_connect();
- lockState =  digitalRead(LPSO_W_STATUS);
- coin_input = digitalRead(LPSO_W_IN);
+ sftnrDrop =  digitalRead(DTG_MTR_SFT);
+ dtgDrop = digitalRead(DTG_MTR_DTG);
+ begDrop = digitalRead(DTG_MTR_BEG);
+ coin_input1 = digitalRead(DTG_CA1_IN);
+ coin_input2 = digitalRead(DTG_CA2_IN);
 
- if (high == 0) {
-  if(coin_input == LOW) {
-    coinCounter++;
-    if (coinCounter > 5) {
-      high = 1;
-      coinCounter = 0;
+///////////////////////////////////
+////// Coin Acceptor 1 ////////////
+///////////////////////////////////
+
+  if (high1 == 0) {
+    if(coin_input1 == LOW) {
+      coinCounter1++;
+      if (coinCounter1 > 5) {
+        high1 = 1;
+        coinCounter1 = 0;
+        //Serial.print("One coin inserted\n");
+        //coinIn.publish("1COIN");
+      }
+    } else {
+      high1 = 0;
+    }
+  } else if (high1 == 1) {
+    if (coin_input1 == HIGH) {
+      coinCounter1++;
+      if (coinCounter1 >20) {
+        high1 = 0;
+        coinIn.publish("1COIN");  
+      } 
+    } else {
+      high1 = 1;
+    }
+  }
+
+///////////////////////////////////
+////// Coin Acceptor 2 ////////////
+///////////////////////////////////
+
+
+  if (high2 == 0) {
+    if(coin_input2 == LOW) {
+      coinCounter2++;
+      if (coinCounter2 > 5) {
+        high2 = 1;
+        coinCounter2 = 0;
       //Serial.print("One coin inserted\n");
       //coinIn.publish("1COIN");
-    }
-  } else {
-    high = 0;
-  }
- } else if (high == 1) {
-   if (coin_input == HIGH) {
-     coinCounter++;
-     if (coinCounter >20) {
-       high = 0;
-       coinIn.publish("1COIN");  
-     } 
-   } else {
-     high = 1;
-   }
- }
-
- if (lockState == LOW) {
-  if (SendOne <= 5) {
-    lockCounter++;
-    //Serial.print("enter state 1");
-    if(lockCounter > 700){
-      //Serial.print("Locked");
-      runStatus.publish("Locked");
-      lockCounter = 0;
-      SendOne++;
-      checkOne = 0;
-      unlockCounter = 0;
-    }
-   }
- } else if (lockState == HIGH){
-    if (checkOne <= 2) {
-      unlockCounter++;
-      if (unlockCounter > 50){
-        //Serial.print("Unlocked");
-        runStatus.publish("Unlocked");
-        //payMachine_NC(3);
-        checkOne++;
-        SendOne = 0;
-        unlockCounter = 0;
-        
       }
-      lockCounter = 0;
+    } else {
+      high2 = 0;
     }
- }
+  } else if (high2 == 1) {
+    if (coin_input2 == HIGH) {
+      coinCounter2++;
+      if (coinCounter2 >20) {
+        high2 = 0;
+        coinIn.publish("1COIN");  
+      } 
+    } else {
+      high2 = 1;
+    }
+  }
 
- // this is our 'wait for incoming subscription packets' busy subloop 
- // try to spend your time here 
- // Here its read the subscription 
+////////////////////////////////
+////// Softener motor turning //
+////////////////////////////////
+
+  if (turn_sft == 0) {
+    if(sftnrDrop == HIGH) {
+      sftnrCounter++;
+      if (sftnrCounter > 8) {
+        turn_sft = 1;
+        sftnrCounter = 0;
+      }
+    } else {
+      turn_sft = 0;
+    }
+  } else if (turn_sft == 1) {
+    if (sftnrDrop == LOW) {
+      sftnrCounter++;
+      if (sftnrCounter >20) {
+        turn_sft = 0;
+        coinIn.publish("SFTNR_DROP");  
+      } 
+    } else {
+      turn_sft = 1;
+    }
+  }
+
+/////////////////////////////////
+//// Detergent motor turning ////
+/////////////////////////////////
+
+  if (turn_dtg == 0) {
+    if(dtgDrop == HIGH) {
+      dtgCounter++;
+      if (dtgCounter > 8) {
+        turn_dtg = 1;
+        dtgCounter = 0;
+      }
+    } else {
+      turn_dtg = 0;
+    }
+  } else if (turn_dtg == 1) {
+    if (dtgDrop == LOW) {
+      dtgCounter++;
+      if (dtgCounter >20) {
+        turn_dtg = 0;
+        coinIn.publish("DTG_DROP");  
+      } 
+    } else {
+      turn_dtg = 1;
+    }
+  }
+
+//////////////////////////////////
+///// Beg Motor turning //////////
+//////////////////////////////////
+
+  if (turn_beg == 0) {
+    if(begDrop == HIGH) {
+      begCounter++;
+      if (begCounter > 8) {
+        turn_beg = 1;
+        begCounter = 0;
+      }
+    } else {
+      turn_beg = 0;
+    }
+  } else if (turn_beg == 1) {
+    if (begDrop == LOW) {
+      begCounter++;
+      if (begCounter >20) {
+        turn_beg = 0;
+        coinIn.publish("BEG_DROP");  
+      } 
+    } else {
+      turn_beg = 1;
+    }
+  }
+
+//////////////////////////////////////
+////// Receive E-payment /////////////
+//////////////////////////////////////
+
  Adafruit_MQTT_Subscribe *subscription; 
  while ((subscription = mqtt.readSubscription())) { 
    if (subscription == &receivedPayment) {
-     Serial.println("test124");
+     //Serial.println("test124");
      char *message = (char *)receivedPayment.lastread; 
      float to_float = atof(message);
      int amount = int(to_float);
-     Serial.print(F("Got: ")); 
-     Serial.println(message);
+     //Serial.print(F("Got: ")); 
+     //Serial.println(message);
      
      // Check if the message was a number  
      if (isValidNumber(message) == true) { 
        if (amount <= 10) { 
-         payMachine_NC(amount);
+         payMachine_NO(amount);
        }
      } 
    }
@@ -225,26 +323,28 @@ void loop() {
 //////////////////////////////////
 
 void MQTT_connect() { 
-  int ret;
-  // Stop if already connected. 
-  if (mqtt.connected()) {
-    return; 
-  } 
-  Serial.print("Connecting to MQTT... "); 
-  uint8_t retries = 3; 
+ int8_t ret; 
+ int mycount;
+ mycount = 0;
+ // Stop if already connected. 
+ if (mqtt.connected()) {
+   return; 
+ } 
+ //Serial.print("Connecting to MQTT... "); 
+ uint8_t retries = 3; 
   while ((ret = mqtt.connect()) != 0) { // connect will return 0 for connected 
-    Serial.println(mqtt.connectErrorString(ret)); 
-    Serial.println("Retrying MQTT connection in 5 seconds..."); 
+    //Serial.println(mqtt.connectErrorString(ret)); 
+    //Serial.println("Retrying MQTT connection in 5 seconds..."); 
     mqtt.disconnect(); 
     delay(5000);  // wait 5 seconds 
     retries--; 
-    if (retries == 0) { 
-      //basically die and wait for WDT to reset me 
-      while (1); 
-    } 
-  }
-  Serial.println("MQTT Connected!");
-  //lastwill.publish("ON");
+     if (retries == 0) { 
+        //basically die and wait for WDT to reset me 
+        while (1); 
+     } 
+ }
+ //Serial.println("MQTT Connected!");
+ //lastwill.publish("ON");
 } 
 
 void payMachine_NC (int amt) {
@@ -259,6 +359,8 @@ void payMachine_NC (int amt) {
       delay(2000);
     }
     digitalWrite(LPSO_W_SEL,LOW);
+    //Serial.print((int)moneyR);
+    //Serial.print("\n");
   }
 }
 
@@ -272,6 +374,8 @@ void payMachine_NO (int amt) {
       digitalWrite(DEX_D_CTRL, LOW); 
       delay(2000);
     }
+    //Serial.print((int)moneyR);
+    //Serial.print("\n");
   }
 }
 

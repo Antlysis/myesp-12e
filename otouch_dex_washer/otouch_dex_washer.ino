@@ -84,25 +84,22 @@ void timerInit(void) {
 }
 
 
+
 ///////////////////////////////////
 ///////// INITIALISATION //////////
 ///////////////////////////////////
 
 void setup() {
- pinMode(LPSO_W_SEL, OUTPUT);
- pinMode(LPSO_W_IN, INPUT);
- pinMode(LPSO_W_STATUS, INPUT);
- pinMode(LPSO_W_CTRL, OUTPUT);
- pinMode(DEX_D_CTRL, OUTPUT);
+
+ //pinMode(COIN_INPIN, INPUT);
+ pinMode(DEX_W_IN, INPUT);
+ pinMode(DEX_W_CTRL, OUTPUT);
+ pinMode(DEX_W_STATUS, INPUT);
  pinMode(LED_BUILTIN, OUTPUT);
- //blink(3);
+ 
  Serial.begin(115200); 
  delay(1000);
- // always need to select low for the coin acceptor.
- //digitalWrite(SEL_PIN, LOW);
- //digitalWrite(COIN_OUTPIN, LOW); 
  digitalWrite(LED_BUILTIN, HIGH);
- // Read the mode of the hardware //
  
  Serial.println();
  Serial.print("Connecting to "); 
@@ -110,20 +107,20 @@ void setup() {
  WiFi.begin(WLAN_SSID, WLAN_PASS); 
  while (WiFi.status() != WL_CONNECTED) { 
    delay(500); 
-   Serial.print("."); 
+   //Serial.print("."); 
  } 
- Serial.println(); 
- Serial.println("WiFi connected"); 
- Serial.println("IP address: "); Serial.println(WiFi.localIP());
- // Setup MQTT subscription for esp8266_led feed. 
+ //Serial.println(); 
+ //Serial.println("WiFi connected"); 
+ //Serial.println("IP address: "); Serial.println(WiFi.localIP());
  mqtt.subscribe(&receivedPayment);
  mqtt.will(MQTT_USERNAME "connectivity/6786f3831d7a750bac397d8967b81044", "OFF");
  timerInit();
 }
 
-int counter = 0;
-int checkOne=0;
-int SendOne = 0;
+////////////////////////////////////
+//////// SOME VARIABLE INIT ////////
+////////////////////////////////////
+
 int lockCounter = 0;
 int lockCount = 0;
 int coin_input = 0;
@@ -131,6 +128,11 @@ int coinCounter = 0;
 int unlockCounter = 0;
 int high = 0;
 int lockState = HIGH;
+int lastLockState = HIGH;
+int counter = 0;
+int checkOne=0;
+int SendOne = 0;
+int moneyR = 0;
 
 ///////////////////////////////////
 /////// MAIN LOOP /////////////////
@@ -141,13 +143,14 @@ void loop() {
  // connection and automatically reconnect when disconnected).  See the MQTT_connect 
  
  MQTT_connect();
- lockState =  digitalRead(LPSO_W_STATUS);
- coin_input = digitalRead(LPSO_W_IN);
+ lockState =  digitalRead(DEX_W_STATUS);
+ coin_input = digitalRead(DEX_W_IN);
 
- if (high == 0) {
-  if(coin_input == LOW) {
+
+if (high == 0) {
+  if(coin_input == HIGH) {
     coinCounter++;
-    if (coinCounter > 5) {
+    if (coinCounter > 3) {
       high = 1;
       coinCounter = 0;
       //Serial.print("One coin inserted\n");
@@ -156,30 +159,29 @@ void loop() {
   } else {
     high = 0;
   }
- } else if (high == 1) {
-   if (coin_input == HIGH) {
-     coinCounter++;
-     if (coinCounter >20) {
-       high = 0;
-       coinIn.publish("1COIN");  
-     } 
-   } else {
-     high = 1;
-   }
- }
-
+} else if (high == 1) {
+  if (coin_input == LOW) {
+    coinCounter++;
+    if (coinCounter >20) {
+      high = 0;
+      coinIn.publish("1COIN");  
+    } 
+  } else {
+    high = 1;
+  }
+}
+ 
  if (lockState == LOW) {
   if (SendOne <= 5) {
     lockCounter++;
-    //Serial.print("enter state 1");
-    if(lockCounter > 700){
-      //Serial.print("Locked");
-      runStatus.publish("Locked");
-      lockCounter = 0;
-      SendOne++;
-      checkOne = 0;
-      unlockCounter = 0;
-    }
+      if(lockCounter > 700){
+        //Serial.print("Locked");
+        runStatus.publish("Locked");
+        lockCounter = 0;
+        SendOne++;
+        checkOne = 0;
+        unlockCounter = 0;
+      }
    }
  } else if (lockState == HIGH){
     if (checkOne <= 2) {
@@ -191,29 +193,27 @@ void loop() {
         checkOne++;
         SendOne = 0;
         unlockCounter = 0;
-        
       }
       lockCounter = 0;
     }
  }
 
  // this is our 'wait for incoming subscription packets' busy subloop 
- // try to spend your time here 
  // Here its read the subscription 
  Adafruit_MQTT_Subscribe *subscription; 
  while ((subscription = mqtt.readSubscription())) { 
    if (subscription == &receivedPayment) {
-     Serial.println("test124");
+     //Serial.println("test124");
      char *message = (char *)receivedPayment.lastread; 
      float to_float = atof(message);
      int amount = int(to_float);
-     Serial.print(F("Got: ")); 
-     Serial.println(message);
+     //Serial.print(F("Got: ")); 
+     //Serial.println(message);
      
      // Check if the message was a number  
      if (isValidNumber(message) == true) { 
        if (amount <= 10) { 
-         payMachine_NC(amount);
+         payMachine_NO(amount);
        }
      } 
    }
@@ -225,26 +225,27 @@ void loop() {
 //////////////////////////////////
 
 void MQTT_connect() { 
-  int ret;
-  // Stop if already connected. 
-  if (mqtt.connected()) {
-    return; 
-  } 
-  Serial.print("Connecting to MQTT... "); 
-  uint8_t retries = 3; 
+ int8_t ret; 
+ int mycount;
+ mycount = 0;
+ // Stop if already connected. 
+ if (mqtt.connected()) {
+   return; 
+ } 
+ //Serial.print("Connecting to MQTT... "); 
+ uint8_t retries = 3; 
   while ((ret = mqtt.connect()) != 0) { // connect will return 0 for connected 
-    Serial.println(mqtt.connectErrorString(ret)); 
-    Serial.println("Retrying MQTT connection in 5 seconds..."); 
+    //Serial.println(mqtt.connectErrorString(ret)); 
+    //Serial.println("Retrying MQTT connection in 5 seconds..."); 
     mqtt.disconnect(); 
     delay(5000);  // wait 5 seconds 
     retries--; 
-    if (retries == 0) { 
-      //basically die and wait for WDT to reset me 
-      while (1); 
-    } 
-  }
-  Serial.println("MQTT Connected!");
-  //lastwill.publish("ON");
+     if (retries == 0) { 
+        //basically die and wait for WDT to reset me 
+        while (1); 
+     } 
+ }
+ //Serial.println("MQTT Connected!");
 } 
 
 void payMachine_NC (int amt) {
@@ -266,10 +267,10 @@ void payMachine_NO (int amt) {
   if (amt <= 9) {
     for (int i=1; i <= amt; i++){
       digitalWrite(LED_BUILTIN, HIGH);
-      digitalWrite(DEX_D_CTRL, HIGH);
+      digitalWrite(DEX_W_CTRL, HIGH);
       delay(100);
       digitalWrite(LED_BUILTIN, LOW);
-      digitalWrite(DEX_D_CTRL, LOW); 
+      digitalWrite(DEX_W_CTRL, LOW); 
       delay(2000);
     }
   }

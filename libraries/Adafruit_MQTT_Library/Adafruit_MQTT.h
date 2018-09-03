@@ -90,7 +90,7 @@
 #define SUBACK_TIMEOUT_MS  500
 
 // Adjust as necessary, in seconds.  Default to 5 minutes.
-#define MQTT_CONN_KEEPALIVE 10
+#define MQTT_CONN_KEEPALIVE 50
 
 // Largest full packet we're able to send.
 // Need to be able to store at least ~90 chars for a connect packet with full
