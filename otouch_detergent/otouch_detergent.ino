@@ -19,8 +19,10 @@ extern "C" {
 //#define WLAN_PASS       "!Ath4ht@w4dt!"
 //#define WLAN_SSID "MX SP"
 //#define WLAN_PASS "ssot1178"
-#define WLAN_SSID         "HUAWEI P10 lite"
-#define WLAN_PASS         "c5943f26-c6f"
+#define WLAN_SSID "MX"
+#define WLAN_PASS "asdf7817"
+//#define WLAN_SSID         "HUAWEI P10 lite"
+//#define WLAN_PASS         "c5943f26-c6f"
 
 /////////////////////////////////
 ////// PIN SETUP ///////////////
@@ -30,11 +32,11 @@ extern "C" {
 #define LPSO_W_IN 10
 #define LPSO_W_STATUS 14   //JP1
 #define LPSO_W_CTRL 12     //JP2
-#define DTG_CA_CTRL 16     //JP3
+#define DTG_CA_CTRL 2     //JP3
 #define DTG_CA1_IN 5       //JP6
 #define DTG_CA2_IN 12      //JP2
 #define DTG_MTR_SFT 14     //JP1
-#define DTG_MTR_DTG 2      //JP2
+#define DTG_MTR_DTG 16      //JP2
 #define DTG_MTR_BEG 4      //JP3
 #define DEX_D2_STATUS 16   //JP3
 #define DEX_D_IN 5         //JP6
@@ -52,7 +54,7 @@ extern "C" {
 ////// MQTT SETUP ///////////////
 /////////////////////////////////
 
-#define MQTT_SERVER      "192.168.43.141" // give static address
+#define MQTT_SERVER      "192.168.8.134" // give static address
 #define MQTT_PORT         1883                    
 #define MQTT_USERNAME    "" 
 #define MQTT_PASSWORD         "" 
@@ -94,21 +96,21 @@ void timerInit(void) {
 ///////////////////////////////////
 
 void setup() {
-
  pinMode(DTG_CA1_IN, INPUT);
  pinMode(DTG_CA_CTRL, OUTPUT);
  pinMode(DTG_CA2_IN, INPUT);
  pinMode(DTG_MTR_SFT, INPUT);
  pinMode(DTG_MTR_DTG, INPUT);
  pinMode(DTG_MTR_BEG, INPUT);
- pinMode(LED_BUILTIN, OUTPUT);
+ //pinMode(LED_BUILTIN, OUTPUT);
  //blink(3);
  //Serial.begin(115200); 
+ payMachine_NO(1);
  delay(1000);
  // always need to select low for the coin acceptor.
  //digitalWrite(SEL_PIN, LOW);
- //digitalWrite(COIN_OUTPIN, LOW); 
- digitalWrite(LED_BUILTIN, HIGH);
+ digitalWrite(DTG_CA_CTRL, LOW); 
+ //digitalWrite(LED_BUILTIN, HIGH);
  
  
  //Serial.println();
@@ -164,9 +166,9 @@ void loop() {
 ///////////////////////////////////
 
   if (high1 == 0) {
-    if(coin_input1 == LOW) {
+    if(coin_input1 == HIGH) {
       coinCounter1++;
-      if (coinCounter1 > 5) {
+      if (coinCounter1 > 3) {
         high1 = 1;
         coinCounter1 = 0;
         //Serial.print("One coin inserted\n");
@@ -176,10 +178,11 @@ void loop() {
       high1 = 0;
     }
   } else if (high1 == 1) {
-    if (coin_input1 == HIGH) {
+    if (coin_input1 == LOW) {
       coinCounter1++;
-      if (coinCounter1 >20) {
+      if (coinCounter1 > 10) {
         high1 = 0;
+        //Serial.print("One coin inserted CA1\n");
         coinIn.publish("1COIN");  
       } 
     } else {
@@ -193,9 +196,9 @@ void loop() {
 
 
   if (high2 == 0) {
-    if(coin_input2 == LOW) {
+    if(coin_input2 == HIGH) {
       coinCounter2++;
-      if (coinCounter2 > 5) {
+      if (coinCounter2 > 3) {
         high2 = 1;
         coinCounter2 = 0;
       //Serial.print("One coin inserted\n");
@@ -205,11 +208,12 @@ void loop() {
       high2 = 0;
     }
   } else if (high2 == 1) {
-    if (coin_input2 == HIGH) {
+    if (coin_input2 == LOW) {
       coinCounter2++;
-      if (coinCounter2 >20) {
+      if (coinCounter2 >10) {
         high2 = 0;
-        coinIn.publish("1COIN");  
+        //Serial.print("One coin inserted CA2\n");
+        coinIn.publish("1 ringgit");  
       } 
     } else {
       high2 = 1;
@@ -324,8 +328,6 @@ void loop() {
 
 void MQTT_connect() { 
  int8_t ret; 
- int mycount;
- mycount = 0;
  // Stop if already connected. 
  if (mqtt.connected()) {
    return; 
@@ -349,16 +351,14 @@ void MQTT_connect() {
 
 void payMachine_NC (int amt) {
   if (amt <= 9) {
-    digitalWrite(LPSO_W_SEL,HIGH);
     for (int i=1; i <= amt; i++){
       digitalWrite(LED_BUILTIN, LOW);
-      digitalWrite(LPSO_W_CTRL, LOW);
-      delay(50);
+      digitalWrite(DTG_CA_CTRL, LOW);
+      delay(100);
       digitalWrite(LED_BUILTIN, HIGH);
-      digitalWrite(LPSO_W_CTRL, HIGH); 
+      digitalWrite(DTG_CA_CTRL, HIGH); 
       delay(2000);
     }
-    digitalWrite(LPSO_W_SEL,LOW);
     //Serial.print((int)moneyR);
     //Serial.print("\n");
   }
@@ -368,10 +368,10 @@ void payMachine_NO (int amt) {
   if (amt <= 9) {
     for (int i=1; i <= amt; i++){
       digitalWrite(LED_BUILTIN, HIGH);
-      digitalWrite(DEX_D_CTRL, HIGH);
+      digitalWrite(DTG_CA_CTRL, HIGH);
       delay(100);
       digitalWrite(LED_BUILTIN, LOW);
-      digitalWrite(DEX_D_CTRL, LOW); 
+      digitalWrite(DTG_CA_CTRL, LOW); 
       delay(2000);
     }
     //Serial.print((int)moneyR);

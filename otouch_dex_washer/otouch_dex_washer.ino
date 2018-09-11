@@ -15,10 +15,10 @@ extern "C" {
 //#define WLAN_PASS       "0105654525afk" 
 //#define WLAN_SSID       "antlysis_meadow_2.4G@unifi"
 //#define WLAN_PASS       "!Ath4ht@w4dt!"
-//#define WLAN_SSID "MX SP"
-//#define WLAN_PASS "ssot1178"
-#define WLAN_SSID         "HUAWEI P10 lite"
-#define WLAN_PASS         "c5943f26-c6f"
+#define WLAN_SSID "MX PJ21"
+#define WLAN_PASS "ssot1178"
+//#define WLAN_SSID         "HUAWEI P10 lite"
+//#define WLAN_PASS         "c5943f26-c6f"
 
 /////////////////////////////////
 ////// PIN SETUP ///////////////
@@ -28,11 +28,11 @@ extern "C" {
 #define LPSO_W_IN 10
 #define LPSO_W_STATUS 14   //JP1
 #define LPSO_W_CTRL 12     //JP2
-#define DTG_CA_CTRL 16     //JP3
+#define DTG_CA_CTRL 2     //JP3
 #define DTG_CA1_IN 5       //JP6
 #define DTG_CA2_IN 12      //JP2
 #define DTG_MTR_SFT 14     //JP1
-#define DTG_MTR_DTG 2      //JP2
+#define DTG_MTR_DTG 16      //JP2
 #define DTG_MTR_BEG 4      //JP3
 #define DEX_D2_STATUS 16   //JP3
 #define DEX_D_IN 5         //JP6
@@ -50,7 +50,7 @@ extern "C" {
 ////// MQTT SETUP ///////////////
 /////////////////////////////////
 
-#define MQTT_SERVER      "192.168.43.141" // give static address
+#define MQTT_SERVER      "192.168.8.107" // give static address
 #define MQTT_PORT         1883                    
 #define MQTT_USERNAME    "" 
 #define MQTT_PASSWORD         "" 
@@ -97,13 +97,13 @@ void setup() {
  pinMode(DEX_W_STATUS, INPUT);
  pinMode(LED_BUILTIN, OUTPUT);
  
- Serial.begin(115200); 
+ //Serial.begin(115200); 
  delay(1000);
  digitalWrite(LED_BUILTIN, HIGH);
  
- Serial.println();
- Serial.print("Connecting to "); 
- Serial.println(WLAN_SSID); 
+ //Serial.println();
+ //Serial.print("Connecting to "); 
+ //Serial.println(WLAN_SSID); 
  WiFi.begin(WLAN_SSID, WLAN_PASS); 
  while (WiFi.status() != WL_CONNECTED) { 
    delay(500); 

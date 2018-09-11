@@ -15,10 +15,10 @@ extern "C" {
 //#define WLAN_PASS       "0105654525afk" 
 //#define WLAN_SSID       "antlysis_meadow_2.4G@unifi"
 //#define WLAN_PASS       "!Ath4ht@w4dt!"
-//#define WLAN_SSID "MX SP"
-//#define WLAN_PASS "ssot1178"
-#define WLAN_SSID         "HUAWEI P10 lite"
-#define WLAN_PASS         "c5943f26-c6f"
+#define WLAN_SSID "MX PJ21"
+#define WLAN_PASS "ssot1178"
+//#define WLAN_SSID         "HUAWEI P10 lite"
+//#define WLAN_PASS         "c5943f26-c6f"
 
 /////////////////////////////////
 ////// PIN SETUP ///////////////
@@ -50,7 +50,7 @@ extern "C" {
 ////// MQTT SETUP ///////////////
 /////////////////////////////////
 
-#define MQTT_SERVER      "192.168.43.141" // give static address
+#define MQTT_SERVER      "192.168.8.107" // give static address
 #define MQTT_PORT         1883                    
 #define MQTT_USERNAME    "" 
 #define MQTT_PASSWORD         "" 

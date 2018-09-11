@@ -28,11 +28,11 @@ extern "C" {
 #define LPSO_W_IN 10
 #define LPSO_W_STATUS 14   //JP1
 #define LPSO_W_CTRL 12     //JP2
-#define DTG_CA_CTRL 16     //JP3
+#define DTG_CA_CTRL 2     //JP3
 #define DTG_CA1_IN 5       //JP6
 #define DTG_CA2_IN 12      //JP2
 #define DTG_MTR_SFT 14     //JP1
-#define DTG_MTR_DTG 2      //JP2
+#define DTG_MTR_DTG 16      //JP2
 #define DTG_MTR_BEG 4      //JP3
 #define DEX_D2_STATUS 16   //JP3
 #define DEX_D_IN 5         //JP6

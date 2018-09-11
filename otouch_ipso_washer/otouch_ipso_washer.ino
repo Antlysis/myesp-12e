@@ -13,12 +13,12 @@ extern "C" {
 
 //#define WLAN_SSID       "Tenda_320CE0" 
 //#define WLAN_PASS       "0105654525afk" 
-//#define WLAN_SSID       "antlysis_meadow_2.4G@unifi"
-//#define WLAN_PASS       "!Ath4ht@w4dt!"
-//#define WLAN_SSID "MX SP"
+#define WLAN_SSID       "antlysis_meadow_2.4G@unifi"
+#define WLAN_PASS       "!Ath4ht@w4dt!"
+//#define WLAN_SSID "MX PJ21"
 //#define WLAN_PASS "ssot1178"
-#define WLAN_SSID         "HUAWEI P10 lite"
-#define WLAN_PASS         "c5943f26-c6f"
+//#define WLAN_SSID         "HUAWEI P10 lite"
+//#define WLAN_PASS         "c5943f26-c6f"
 
 /////////////////////////////////
 ////// PIN SETUP ///////////////
@@ -28,11 +28,11 @@ extern "C" {
 #define LPSO_W_IN 10
 #define LPSO_W_STATUS 14   //JP1
 #define LPSO_W_CTRL 12     //JP2
-#define DTG_CA_CTRL 16     //JP3
+#define DTG_CA_CTRL 2     //JP3
 #define DTG_CA1_IN 5       //JP6
 #define DTG_CA2_IN 12      //JP2
 #define DTG_MTR_SFT 14     //JP1
-#define DTG_MTR_DTG 2      //JP2
+#define DTG_MTR_DTG 16      //JP2
 #define DTG_MTR_BEG 4      //JP3
 #define DEX_D2_STATUS 16   //JP3
 #define DEX_D_IN 5         //JP6
@@ -50,7 +50,7 @@ extern "C" {
 ////// MQTT SETUP ///////////////
 /////////////////////////////////
 
-#define MQTT_SERVER      "192.168.43.141" // give static address
+#define MQTT_SERVER      "192.168.8.107" // give static address
 #define MQTT_PORT         1883                    
 #define MQTT_USERNAME    "" 
 #define MQTT_PASSWORD         "" 
@@ -93,14 +93,13 @@ void setup() {
  pinMode(LPSO_W_IN, INPUT);
  pinMode(LPSO_W_STATUS, INPUT);
  pinMode(LPSO_W_CTRL, OUTPUT);
- pinMode(DEX_D_CTRL, OUTPUT);
  pinMode(LED_BUILTIN, OUTPUT);
  //blink(3);
  Serial.begin(115200); 
  delay(1000);
  // always need to select low for the coin acceptor.
- //digitalWrite(SEL_PIN, LOW);
- //digitalWrite(COIN_OUTPIN, LOW); 
+ digitalWrite(LPSO_W_SEL, LOW);
+ digitalWrite(LPSO_W_CTRL, HIGH); 
  digitalWrite(LED_BUILTIN, HIGH);
  // Read the mode of the hardware //
  
@@ -140,28 +139,31 @@ void loop() {
  // Ensure the connection to the MQTT server is alive (this will make the first 
  // connection and automatically reconnect when disconnected).  See the MQTT_connect 
  
- MQTT_connect();
+ //MQTT_connect();
  lockState =  digitalRead(LPSO_W_STATUS);
  coin_input = digitalRead(LPSO_W_IN);
 
  if (high == 0) {
-  if(coin_input == LOW) {
+  if(coin_input == HIGH) {
+    //Serial.print("high");
     coinCounter++;
     if (coinCounter > 5) {
       high = 1;
       coinCounter = 0;
-      //Serial.print("One coin inserted\n");
+      Serial.print("One coin inserted\n");
       //coinIn.publish("1COIN");
     }
   } else {
     high = 0;
   }
  } else if (high == 1) {
-   if (coin_input == HIGH) {
+   if (coin_input == LOW) {
+    //Serial.print("low");
      coinCounter++;
-     if (coinCounter >20) {
+     if (coinCounter > 20) {
        high = 0;
-       coinIn.publish("1COIN");  
+       coinIn.publish("1COIN");
+       //Serial.print("One coin inserted\n");  
      } 
    } else {
      high = 1;
@@ -173,7 +175,7 @@ void loop() {
     lockCounter++;
     //Serial.print("enter state 1");
     if(lockCounter > 700){
-      //Serial.print("Locked");
+      Serial.print("Locked");
       runStatus.publish("Locked");
       lockCounter = 0;
       SendOne++;
@@ -185,7 +187,7 @@ void loop() {
     if (checkOne <= 2) {
       unlockCounter++;
       if (unlockCounter > 50){
-        //Serial.print("Unlocked");
+        Serial.print("Unlocked");
         runStatus.publish("Unlocked");
         //payMachine_NC(3);
         checkOne++;
